@@ -7,7 +7,69 @@ on:
     pull_request:
       branches:
       - main
+
 jobs:
   backend_vertx:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: first projet
+
+    services: 
+      postgres:
+          # Docker Hub image
+          image: postgres:14
+          # Provide the password for postgres
+          env:
+            POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          # Set health checks to wait until postgres has started
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5    
+    env:
+      VERT_CONNEXION_POSTGREDB_HOST: localhost
+      VERT_CONNEXION_POSTGREDB_USER: postgres
+      VERT_CONNEXION_POSTGREDB_DATABASE: bombe_vert
+      VERT_CONNEXION_POSTGREDB_HOST_PASSSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+
+    steps:
+    - uses: actions/checkout@v4  # RECUPEREr le contenu de mon repertoire
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: LAUNCH TEST
+      run: mvn clean test
+ 
+    - name: Build with Maven
+      run: mvn clean package  
+
+  frontend:
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: consumer_backend
+    
+        steps:
+        - uses: actions/checkout@v4  # RECUPEREr le contenu de mon repertoire
+    
+        - name: Set up JDK 17
+          uses: actions/setup-java@v4
+          with:
+            java-version: '11'
+            distribution: 'temurin'
+            cache: maven
+    
+        - name: LAUNCH TEST
+          run: mvn clean test
+     
+        - name: Build with Maven
+          run: mvn clean package  
+        
       
