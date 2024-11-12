@@ -8,7 +8,7 @@ public class MainVerticle extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
-   /*  vertx.createHttpServer().requestHandler(req -> {
+     vertx.createHttpServer().requestHandler(req -> {
       req.response()
         .putHeader("content-type", "text/plain")
         .end("Hello from Vert.x!");
@@ -19,8 +19,8 @@ public class MainVerticle extends AbstractVerticle {
       } else {
         startPromise.fail(http.cause());
       }
-    }); */
-
+    }); 
+/* 
        final Router router = Router.router(vertx);
 
     router.get("/hello/") 
@@ -34,8 +34,8 @@ public class MainVerticle extends AbstractVerticle {
             .end("<html><body><h1>Bye Bye World</h1></body></html>"));
 
             vertx.createHttpServer() 
-            .requestHandler(router::accept) 
-            .listen(8080);        
+         //   .requestHandler(router::accept) 
+            .listen(8080);        */ 
 
   }
 }
