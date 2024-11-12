@@ -51,25 +51,84 @@ jobs:
       run: mvn clean package  
 
   frontend:
-        runs-on: ubuntu-latest
-        defaults:
-          run:
-            working-directory: consumer_backend
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+          working-directory: consumer_backend
     
-        steps:
+    steps:
         - uses: actions/checkout@v4  # RECUPEREr le contenu de mon repertoire
     
-        - name: Set up JDK 17
-          uses: actions/setup-java@v4
+        - name: Set up NODEJS 17
+          uses: actions/setup-node@v4
           with:
-            java-version: '11'
-            distribution: 'temurin'
-            cache: maven
+            node-version: '18'
     
-        - name: LAUNCH TEST
-          run: mvn clean test
+        - name: Install dependecies
+          run: npm ci
      
-        - name: Build with Maven
-          run: mvn clean package  
+        - name: Launch test
+          run: npm test  
         
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: [backend_vertx, frontend]
+    
+    services: 
+      postgres:
+          # Docker Hub image
+          image: postgres:14
+          # Provide the password for postgres
+          env:
+            POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          # Set health checks to wait until postgres has started
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5    
+     
+    steps:
+    - uses: actions/checkout@v4    
+
+    - name: RUN DATABASE MIGRATION
+      run: ./bootstrap.sh
+      working-directory: postgres
+
+    - name: START COMPONENTS
+      run: docker compose -f docker-compose.build.yml up -d
+      env: 
+        DOCKER_NETWORK: ${{job.services.postgres.network}}   
+
+    - name: STOP components
+      run: docker compose -f docker-compose.build.yml down
+      
+  build-image:
+    runs-on: ubuntu-latest
+    needs: [integration-test]
+    if: ${{ github.event_name=='push' && github.ref_name=='main' }}
+
+    strategy:
+      matrix:
+        component: [ "frontend", "backend_vertx" ]
+
+    permissions: 
+      packages: write
+      contents: read
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: LOGIN REGISTRY
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      
+    - name: BUILD THE DOCKER IMAGE
+      uses: docker/build-push-action@v2
+      with: 
+        context: ${{ matrix.component }}
+        push: true
+        file: ${{ matrix.component }}/Dockerfile
+        tags: ghcr.io/${{ github.repository_owner }}/spm-${{matrix.component}}:${{github.ref_name}}  
+      
+
       
