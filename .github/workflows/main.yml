@@ -1,0 +1,13 @@
+name: integration continue et livraison de mon premier projet vertx
+
+on: 
+    push:
+      branches:
+      - main  
+    pull_request:
+      branches:
+      - main
+jobs:
+  backend_vertx:
+    runs-on: ubuntu-latest
+      
